@@ -31,8 +31,9 @@ local binops = {
 	['%'] = function(a, b) return a % b end,
 	['^'] = function(a, b) return a ^ b end,
 	C = function(a, b) return binom(a, b) end,
-	choose = function(a, b) if a > 100 then error("too many dice!", 0) end return binom(a, b) end,
+	choose = function(a, b) return binom(a, b) end,
 	d = function(a, b)
+		if a > 100 then error("too many dice!", 0) end
 		local ret = 0;
 		for i = 1, a do
 			ret = ret + math.random(b);
