@@ -93,6 +93,11 @@ local http = require('socket.http')
 dofile('music_genres.lua')
 dofile('calc.lua')
 
+local authed = {}
+for line in io.lines("authed.txt") do
+	authed[line] = true
+end
+
 function os.capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
   local s = assert(f:read('*a'))
@@ -110,6 +115,12 @@ replies.PRIVMSG = function(prefix, rest)
 	local msg = rest:match(':(.*)')
 	local nick = prefix:match('(%S+)!')
 	local host = prefix:match('@(%S+)')
+	local user = prefix:match('!(%S+)')
+
+	if not chan:find('^#') then
+		chan = nick
+	end
+
 	if msg:find('^!help') then
 		privmsg(chan, '!down !flip !fortune !genre !math !word')
 	end
@@ -177,6 +188,27 @@ replies.PRIVMSG = function(prefix, rest)
 		end
 		privmsg(chan, str)
 	end
+	if msg:find('^!auth') and authed[user] then
+		local entry = msg:match('%w+@.+$')
+		if entry and not authed[entry] then
+			authed[entry] = true
+			local file = io.open("authed.txt", "w+")
+			for entry,_ in pairs(authed) do
+				file:write(entry .."\n")
+			end
+			file:flush()
+			file:close()
+			privmsg(chan, "Successfully added "..entry)
+		elseif authed[entry] then
+			privmsg(chan, "That user is already authorized.")
+		else
+			privmsg(chan, "Not a valid entry. Should be username and hostname.")
+		end
+	end
+	if msg:find('^!quit')and authed[user] then
+		conn:close()
+		os.exit()
+	end
 end
 
 function main()
@@ -186,7 +218,7 @@ function main()
 		user('Leroy', '0', '*', 'baddest man in the whole damn town')
 		join('#Leroy')
 		join('#n')
-		
+
 		while true do
 			send_dequeue()
 			line, err = conn:receive('*l')
@@ -198,11 +230,11 @@ function main()
 				break
 			end
 		end
-		
+
 		socket.sleep(10)
-		
+
 		--quit('this has been a test.')
-		
+
 		conn:close()
 	end
 end
