@@ -92,6 +92,7 @@ end
 local http = require('socket.http')
 dofile('music_genres.lua')
 dofile('calc.lua')
+local NSRX = require('NSRX')
 
 local authed = {}
 for line in io.lines("authed.txt") do
@@ -188,6 +189,9 @@ replies.PRIVMSG = function(prefix, rest)
 		end
 		privmsg(chan, str)
 	end
+	if chan == "#NSRX" then
+		NSRX:parseCommand(nick, msg)
+	end
 	if msg:find('^!auth') and authed[user] then
 		local entry = msg:match('%w+@.+$')
 		if entry and not authed[entry] then
@@ -205,10 +209,6 @@ replies.PRIVMSG = function(prefix, rest)
 			privmsg(chan, "Not a valid entry. Should be username and hostname.")
 		end
 	end
-	if msg:find('^!quit')and authed[user] then
-		conn:close()
-		os.exit()
-	end
 end
 
 function main()
@@ -218,6 +218,7 @@ function main()
 		user('Leroy', '0', '*', 'baddest man in the whole damn town')
 		join('#Leroy')
 		join('#n')
+		join('#NSRX')
 
 		while true do
 			send_dequeue()
