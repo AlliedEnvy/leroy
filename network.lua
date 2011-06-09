@@ -91,7 +91,7 @@ end
 
 local http = require('socket.http')
 dofile('music_genres.lua')
-dofile('calc.lua')
+--~ dofile('calc.lua')
 local NSRX = require('NSRX')
 
 local authed = {}
@@ -217,7 +217,7 @@ function main()
 		nick('Leroy')
 		user('Leroy', '0', '*', 'baddest man in the whole damn town')
 		join('#Leroy')
-		join('#n')
+--~ 		join('#n')
 		join('#NSRX')
 
 		while true do
