@@ -44,6 +44,7 @@ end -- Card
 --------------------------------------------------------------
 
 local player_mt = {
+	__eq = function(a, b) return a.name == b.name end,
 	__tostring = function(e) return e.name.." - Points "..e.points.." -"..cardsToString(e) end}
 
 function Player(name, next)
@@ -78,7 +79,18 @@ function NSRX:parseCommand(nick, msg)
 		self.players[nick] = Player(nick, self.currentPlayer)
 		self.currentPlayer = self.players[nick]
 		privmsg (self.channel, self.colours.blue..self.currentPlayer.name.." was added.")
-	elseif msg:find("^!start") then
+	elseif msg:find("^!quit") and self.inGame then
+		if self.players[nick] == self.currentPlayer then
+			self.currentPlayer = self.players[nick].next
+		end
+		for _,player in pairs(self.players) do
+			if player.next == self.players[nick] then
+				player.next = self.players[nick].next
+			end
+		end
+		privmsg (self.channel, self.colours.blue.."Removed ".. self.players[nick].name ..".")
+		self.players[nick] = nil
+	elseif msg:find("^!start") and self.currentPlayer ~= nil and not self.inGame then
 		for _,player in pairs(self.players) do
 			if player.next == nil then
 				player.next = self.currentPlayer
@@ -93,32 +105,35 @@ function NSRX:parseCommand(nick, msg)
 				self:dealCard()
 				privmsg (self.channel, self:newTurn())
 			else
-				privmsg (self.channel, self.colours.red.."You already have ".. #self.dealtTo.cards.. " cards.")
-				privmsg (self.channel, self.colours.green.."Choose a card to remove:"..cardsToString(self.dealtTo))
+				privmsg (self.channel, self.colours.red..self.dealtTo.name.." already has ".. #self.dealtTo.cards.. " cards.")
+				privmsg (self.channel, self.colours.green..self.dealtTo.name..": Choose a card [X//Y] to remove:"..cardsToString(self.dealtTo))
 			end
-		else
-			privmsg (self.channel, self.colours.blue..msg:match('^!play (.-)%s*$').." does not exist.")
 		end
-	elseif msg:find("^!card") and nick == self.currentPlayer.name then
-		self.currentCard = Card(rand(6), rand(6))
-		privmsg (self.channel, tostring(self.currentCard))
 	elseif self.players[msg:match('^!(.-)%s*$')] then
 		privmsg (self.channel, self.colours.green..tostring(self.players[msg:match('^!(.-)%s*$')]))
+	elseif msg:find("^!table") and self.inGame then
+		for _,player in pairs(self.players) do
+			privmsg (self.channel, self.colours.green..tostring(player))
+		end
 	elseif self.dealtTo ~= nil and nick == self.dealtTo.name then
 		local speed, lift = msg:match("(%d)//(%d)")
-		local toRemove = Card(tonumber(speed), tonumber(lift))
-		for i,card in ipairs(self.dealtTo.cards) do
-			if card == toRemove then
-				table.remove(self.dealtTo.cards, i)
-				privmsg(self.channel, self.colours.red.."Removed ".. tostring(card) .. " from ".. self.dealtTo.name .. ".")
-				break
+		if tonumber(speed) ~= nil and tonumber(lift) ~= nil then
+			local toRemove = Card(tonumber(speed), tonumber(lift))
+			for i,card in ipairs(self.dealtTo.cards) do
+				if card == toRemove then
+					table.remove(self.dealtTo.cards, i)
+					privmsg(self.channel, self.colours.red.."Removed ".. tostring(card) .. " from ".. self.dealtTo.name .. ".")
+					break
+				end
 			end
+			if #self.dealtTo.cards >= 3 then
+				privmsg (self.channel, self.colours.green.."You don't have that card.")
+			end
+			self:dealCard()
+			privmsg (self.channel, self:newTurn())
 		end
-		if #self.dealtTo.cards >= 3 then
-			privmsg (self.channel, self.colours.green.."You don't have that card.")
-		end
-		self:dealCard()
-		privmsg (self.channel, self:newTurn())
+	elseif msg:find("^!current") and self.inGame then
+		privmsg (self.channel, self.colours.red.."Current card: "..tostring(self.currentCard).. " - Current player: ".. self.currentPlayer.name..".")
 	elseif msg:find("^!end") and self.inGame then
 		self.currentPlayer = nil
 		self.inGame = false
@@ -153,7 +168,7 @@ function NSRX:dealCard()
 	privmsg (self.channel, self.colours.green..self.dealtTo.name.."'s hand total is "..total.speed.."//"..total.lift..". ".. message)
 
 	if self.dealtTo.points >= 7 then
-		privmsg (self.channel, self.colours.blue.."Game over! "..self.dealtTo.name.. "has won!")
+		privmsg (self.channel, self.colours.blue.."Game over! "..self.dealtTo.name.. " has won!")
 		self.currentPlayer = nil
 		self.inGame = false
 		self.players = {}
@@ -172,5 +187,3 @@ end
 
 
 return NSRX
-
---~ <blue_tetris> Blue for game functions, red for in-game turns, green for cards and information?
