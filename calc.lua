@@ -1,6 +1,6 @@
 pcall(require , 'luarocks.require')
 local lpeg = require('lpeg')
-require('mathx')
+require('gamma')
 --local re = require('re')
 
 -- number parser from http://lua-users.org/wiki/LpegRecipes
